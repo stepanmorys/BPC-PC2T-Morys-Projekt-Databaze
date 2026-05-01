@@ -1,4 +1,7 @@
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+
 public class BezpecnostniSpecialista extends Zamestnanec {
 
     public BezpecnostniSpecialista(int id, String jmeno, String prijmeni, int rokNarozeni) {
@@ -9,7 +12,6 @@ public class BezpecnostniSpecialista extends Zamestnanec {
     public void spustitDovednost(SpravaZamestnancu sprava) {
         System.out.println("--- Globální bezpečnostní audit (vypracoval: " + getPrijmeni() + ") ---");
 
-        // Získáme seznam úplně všech zaměstnanců v naší databázi
         List<Zamestnanec> vsichniZamestnanci = sprava.getVsiZamestnanci();
 
         if (vsichniZamestnanci.isEmpty()) {
@@ -17,30 +19,49 @@ public class BezpecnostniSpecialista extends Zamestnanec {
             return;
         }
 
-        // Cyklus projde jednoho zaměstnance po druhém
         for (Zamestnanec z : vsichniZamestnanci) {
-            int pocetSpolupracovniku = z.getSeznamSpolupracovniku().size();
+            int idZamestnance = z.getId();
 
-            // Pokud nemá žádné spolupráce, skóre je nula
-            if (pocetSpolupracovniku == 0) {
-                System.out.println("Zaměstnanec: " + z.getJmeno() + " " + z.getPrijmeni() + " | Skóre: 0.0 (Žádné vazby)");
-                continue; // Přeskočíme zbytek kódu a jdeme na dalšího člověka
-            }
 
-            double soucetHodnoceni = 0;
-            // Projdeme spolupráce TOHOTO konkrétního zaměstnance a sečteme hodnocení
+            Set<Integer> unikatniKolegove = new HashSet<>();
+
+
             for (Spoluprace s : z.getSeznamSpolupracovniku()) {
-                soucetHodnoceni += s.getUroven().getHodnota();
+                unikatniKolegove.add(s.getIdKolegy());
             }
 
-            // Vlastní algoritmus pro výpočet
-            double prumer = soucetHodnoceni / pocetSpolupracovniku;
-            double rizikoveSkore = prumer * pocetSpolupracovniku;
 
-            // Vypsání výsledku pro daného zaměstnance
+            int pocetPrichozichHodnoceni = 0;
+            double soucetPrijatychHodnoceni = 0;
+
+            for (Zamestnanec ostatni : vsichniZamestnanci) {
+                if (ostatni.getId() != idZamestnance) {
+                    for (Spoluprace s : ostatni.getSeznamSpolupracovniku()) {
+                        if (s.getIdKolegy() == idZamestnance) {
+                            unikatniKolegove.add(ostatni.getId());
+                            pocetPrichozichHodnoceni++;
+                            soucetPrijatychHodnoceni += s.getUroven().getHodnota();
+                        }
+                    }
+                }
+            }
+
+            int celkovyPocetVazeb = unikatniKolegove.size();
+
+            if (celkovyPocetVazeb == 0) {
+                System.out.println("Zaměstnanec: " + z.getJmeno() + " " + z.getPrijmeni() +
+                        " | Počet spoluprací: 0 | Rizikové skóre: 0.00");
+                continue;
+            }
+
+            double rizikoveSkore = 0;
+            if (pocetPrichozichHodnoceni > 0) {
+                rizikoveSkore = soucetPrijatychHodnoceni / pocetPrichozichHodnoceni;
+            }
+
             System.out.println("Zaměstnanec: " + z.getJmeno() + " " + z.getPrijmeni() +
-                    " | Počet vazeb: " + pocetSpolupracovniku +
-                    " | Rizikové skóre: " + rizikoveSkore);
+                    " | Počet unikátních spoluprací: " + celkovyPocetVazeb +
+                    " | Rizikové skóre: " + String.format("%.2f", rizikoveSkore));
         }
     }
 

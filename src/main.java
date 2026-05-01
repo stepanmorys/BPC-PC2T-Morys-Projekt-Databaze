@@ -3,21 +3,20 @@ import java.util.Scanner;
 public class main {
     public static void main(String[] args) {
 
-        // Vytvoříme si naši správu (databázi v paměti) a nástroj na čtení klávesnice
+
         SpravaZamestnancu sprava = new SpravaZamestnancu();
         Scanner scanner = new Scanner(System.in);
         boolean beziProgram = true;
 
-        DatabazeSQL databazeSQL = new DatabazeSQL(); // Vytvoří napojení na SQLite
+        DatabazeSQL databazeSQL = new DatabazeSQL();
 
-        // Bod l: Načteme zálohu při startu
+
         databazeSQL.nacistVse(sprava);
 
-        // ... (následuje zbytek tvého kódu)
 
         System.out.println("Vítejte v systému pro správu zaměstnanců!");
 
-        // Hlavní smyčka programu
+
         while (beziProgram) {
             System.out.println("\n=== HLAVNÍ MENU ===");
             System.out.println("a) Přidání zaměstnance");
@@ -30,40 +29,80 @@ public class main {
             System.out.println("h) Výpis počtu zaměstnanců ve skupinách");
             System.out.println("i) Uložit zaměstnance do souboru");
             System.out.println("j) Nahrát zaměstnance ze souboru");
+            System.out.println("k) Export celé databáze do souboru");
+            System.out.println("l) Vymazat celou databázi");
             System.out.println("0) Ukončit program");
             System.out.print("Vyberte akci: ");
 
-            String volba = scanner.nextLine().toLowerCase(); // Přečteme volbu a převedeme na malá písmena
+            String volba = scanner.nextLine().toLowerCase();
 
-            // Rozhodovací strom podle volby uživatele
+
             switch (volba) {
                 case "a":
                     System.out.println("\n--- Přidání zaměstnance ---");
-                    System.out.print("Vyberte skupinu (1 = Datový analytik, 2 = Bezpečnostní specialista): ");
-                    String skupina = scanner.nextLine();
 
-                    System.out.print("Jméno: ");
-                    String jmeno = scanner.nextLine();
+                    String skupina = "";
+                    while (true) {
+                        System.out.print("Vyberte skupinu (1 = Datový analytik, 2 = Bezpečnostní specialista): ");
+                        skupina = scanner.nextLine().trim();
 
-                    System.out.print("Příjmení: ");
-                    String prijmeni = scanner.nextLine();
+                        if (skupina.equals("1") || skupina.equals("2")) {
+                            break;
+                        } else {
+                            System.out.println("⚠️ Neplatná skupina! Zadejte prosím číslo 1 nebo 2.");
+                        }
+                    }
 
-                    System.out.print("Rok narození: ");
-                    // Zde musíme text z konzole převést na číslo
-                    int rok = Integer.parseInt(scanner.nextLine());
+                    String jmeno = "";
+                    while (true) {
+                        System.out.print("Jméno: ");
+                        jmeno = scanner.nextLine().trim();
+
+                        if (jmeno.matches("^[\\p{L}]+$")) {
+                            break;
+                        } else {
+                            System.out.println("⚠️ Chyba: Jméno smí obsahovat pouze text (písmena). Zkuste to znovu.");
+                        }
+                    }
+
+                    String prijmeni = "";
+                    while (true) {
+                        System.out.print("Příjmení: ");
+                        prijmeni = scanner.nextLine().trim();
+
+                        if (prijmeni.matches("^[\\p{L}]+$")) {
+                            break;
+                        } else {
+                            System.out.println("⚠️ Chyba: Příjmení smí obsahovat pouze text (písmena). Zkuste to znovu.");
+                        }
+                    }
+
+                    int rok = 0;
+                    while (true) {
+                        System.out.print("Rok narození: ");
+                        String vstupRok = scanner.nextLine().trim();
+
+                        try {
+                            rok = Integer.parseInt(vstupRok);
+                            break;
+                        } catch (NumberFormatException e) {
+                            System.out.println("⚠️ Napiš platný rok narození.");
+                        }
+                    }
 
                     int noveId = sprava.generujId();
 
-                    // Podle skupiny vytvoříme správný objekt
                     if (skupina.equals("1")) {
                         Zamestnanec novyAnalytik = new DatovyAnalytik(noveId, jmeno, prijmeni, rok);
                         sprava.pridatZamestnance(novyAnalytik);
+                        System.out.println("✅ Datový analytik byl úspěšně přidán.");
                     } else if (skupina.equals("2")) {
                         Zamestnanec novySpecialista = new BezpecnostniSpecialista(noveId, jmeno, prijmeni, rok);
                         sprava.pridatZamestnance(novySpecialista);
-                    } else {
-                        System.out.println("❌ Neplatná skupina! Zaměstnanec nebyl přidán.");
+                        System.out.println("✅ Bezpečnostní specialista byl úspěšně přidán.");
                     }
+
+                    databazeSQL.ulozitVse(sprava.getVsiZamestnanci());
                     break;
 
                 case "b":
@@ -76,12 +115,14 @@ public class main {
                     int uroven = Integer.parseInt(scanner.nextLine());
 
                     sprava.vytvoritSpolupraci(idZ, idK, uroven);
+                    databazeSQL.ulozitVse(sprava.getVsiZamestnanci());
                     break;
 
                 case "c":
                     System.out.print("Zadejte ID zaměstnance k odebrání: ");
                     int idSmazat = Integer.parseInt(scanner.nextLine());
                     sprava.odebratZamestnance(idSmazat);
+                    databazeSQL.ulozitVse(sprava.getVsiZamestnanci());
                     break;
 
                 case "d":
@@ -97,7 +138,7 @@ public class main {
                     Zamestnanec hledany = sprava.najitZamestnance(idE);
 
                     if (hledany != null) {
-                        // Zde programu předáváme celou správu, aby do ní analytik viděl
+
                         hledany.spustitDovednost(sprava);
                     } else {
                         System.out.println("❌ Zaměstnanec nenalezen.");
@@ -130,9 +171,22 @@ public class main {
                     String souborKNacteni = scanner.nextLine();
                     sprava.nacistZamestnanceZeSouboru(souborKNacteni);
                     break;
+                case "k":
+                    SpravaSouboru export = new SpravaSouboru();
+                    export.ulozitDoTextovehoSouboru(sprava.getVsiZamestnanci(), "zamestnanci_export.csv");
+                    break;
+                case "l":
 
+                    sprava.getVsiZamestnanci().clear();
+
+                    sprava.nastavDalsiId(1);
+
+                    databazeSQL.vymazatCelouDatabazi();
+
+                    System.out.println("✅ Program je nyní v čistém stavu a připraven na nová data.");
+                    break;
                 case "0":
-                    // Bod k: Uložíme vše do zálohy před vypnutím
+
                     databazeSQL.ulozitVse(sprava.getVsiZamestnanci());
 
                     System.out.println("Ukončuji program. Na shledanou!");
@@ -144,6 +198,6 @@ public class main {
             }
         }
 
-        scanner.close(); // Slušnost je po sobě uklidit a scanner zavřít
+        scanner.close();
     }
 }

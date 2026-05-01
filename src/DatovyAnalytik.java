@@ -1,4 +1,3 @@
-// Datový analytik
 public class DatovyAnalytik extends Zamestnanec {
 
     public DatovyAnalytik(int id, String jmeno, String prijmeni, int rokNarozeni) {
@@ -17,14 +16,14 @@ public class DatovyAnalytik extends Zamestnanec {
         int maxSpolecnych = -1;
         int idNejlepsihoKolegy = -1;
 
-        // 1. Projdeme všechny mé spolupracovníky
+
         for (Spoluprace mojeSpoluprace : seznamSpolupracovniku) {
             int idKolegy = mojeSpoluprace.getIdKolegy();
             Zamestnanec kolega = sprava.najitZamestnance(idKolegy);
 
             if (kolega != null) {
                 int spolecnych = 0;
-                // 2. Projdeme spolupracovníky mého kolegy a hledáme shodu v mém seznamu
+
                 for (Spoluprace jehoSpoluprace : kolega.getSeznamSpolupracovniku()) {
                     for(Spoluprace s : seznamSpolupracovniku) {
                         if(s.getIdKolegy() == jehoSpoluprace.getIdKolegy()) {
@@ -33,7 +32,7 @@ public class DatovyAnalytik extends Zamestnanec {
                     }
                 }
 
-                // 3. Pamatujeme si toho, s kým máme shodu největší
+
                 if (spolecnych > maxSpolecnych) {
                     maxSpolecnych = spolecnych;
                     idNejlepsihoKolegy = idKolegy;
